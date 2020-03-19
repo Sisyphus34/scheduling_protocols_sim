@@ -27,22 +27,13 @@ class Scheduler {
     private static int st;
     private static int time = 0;
     private static int taskStart;
-    private static boolean endTask = false;
+    private static boolean taskComplete = false;
     private static String emptyQ = "--";
-    private static boolean taskRunning = false;
 
-    // int
-    // task_id, /* alphabetic tid can be obtained as 'A'+(task_counter++) */
-    // arrival_time,
-    // service_time,
-    // remaining_time,
-    // completion_time,
-    // response_time,
-    // wait_time;
 
     public static void main(String[] args) {
         acquireTimes();
-        buildTaskList();
+        buildTaskQueue();
         callFifo();
         printTaskSummary();
         printTimeSummary();
@@ -54,21 +45,33 @@ class Scheduler {
         printTraceTimes();
 
         while (!taskQueue.isEmpty()) {
-            Task currentTask = taskQueue.peek();
-            endTask = false;
-            if (time >= currentTask.getArrivalTime()) {
-                currentTask = taskQueue.poll();
-                taskRunning = true;
-                taskStart = time;
-                tid = currentTask.getTaskID();
-                at = currentTask.getArrivalTime();
-                st = currentTask.getServiceTime();
 
+            // Set current task = head of task queue WITHOUT removing from task queue
+            Task currentTask = taskQueue.peek();
+
+            // Ctrl to prevent redundant print lines while no task is "running"
+            taskComplete = false;
+
+            // Start task if task arrival time = time OR if task is in the ready queue
+            if (time >= currentTask.getArrivalTime()) {
+                // Set the current task = head of task queue WITH removal from task queue since
+                // it is now "running"
+                currentTask = taskQueue.poll();
+
+                // Task summary variables
+                taskStart = time; // used to compute task wait time
+                tid = currentTask.getTaskID(); // current task id
+                at = currentTask.getArrivalTime(); // current task arrival time
+                st = currentTask.getServiceTime(); // current task service time
+
+                // While the task still has service time, run task
                 while (st != 0) {
+
+                    // Dynamically track if incoming tasks should be added to ready queue
                     for (Task t : taskQueue) {
                         if (!taskQueue.isEmpty()) {
                             if (time == t.getArrivalTime()) {
-                                readyQueue.add(t);
+                                readyQueue.add(t); // add incoming task to ready queue
                             }
                         }
                     }
@@ -83,13 +86,13 @@ class Scheduler {
                     time++;
                 }
                 currentTask.setCompletionTime(time);
-                endTask = true;
+                taskComplete = true;
                 completedTasks.addElement(currentTask);
                 if (!readyQueue.isEmpty()) {
                     readyQueue.remove();
                 }
             }
-            if (!endTask) {
+            if (!taskComplete) {
                 System.out.printf("%4d%11s\n", time, emptyQ);
                 time++;
             }
@@ -97,13 +100,15 @@ class Scheduler {
         System.out.println();
     }
 
-    private static void printReadyQ(Queue<Task> q){
-        for(Task t: q){
+    private static void printReadyQ(Queue<Task> q) {
+        for (Task t : q) {
             t.printTaskID(t);
         }
     }
 
-    private static void buildTaskList() {
+    private static void buildTaskQueue() {
+
+        // generic task variables to be replaced
         int at = 0;
         int st = 0;
         char tid = '#';
@@ -121,13 +126,13 @@ class Scheduler {
         }
     }
 
-    private static void sortQueueAsc(Queue<Task> q){
-        int a;
-        for(Task t: q){
+    // private static void sortQueueAsc(Queue<Task> q) {
+    //     int a;
+    //     for (Task t : q) {
 
-        }
+    //     }
 
-    }
+    // }
 
     private static void acquireTimes() {
         // Create scanner for I/O redirection
@@ -152,32 +157,6 @@ class Scheduler {
         for (int i = 0; i < arrivalTime.size(); i++) {
             taskID.addElement((char) (i + 65));
         }
-
-        // convert both vectors to strings and print for debugging.
-        arrivalTime.toString();
-        serviceTime.toString();
-
-        /** ARRIVAL TIMES */
-        // System.out.println("Arrival times are:");
-        // for (Integer element : arrivalTime) {
-        // System.out.print(element + " ");
-        // }
-        // System.out.print("\n\r");
-
-        /** SERVICE TIMES */
-        // System.out.println("Service times are:");
-        // for (Integer element : serviceTime) {
-        // System.out.print(element + " ");
-        // }
-        // System.out.print("\n\r");
-
-        /** TaskID */
-        // System.out.println("Task IDs are:");
-        // for (Character element : taskID) {
-        // System.out.print(element + " ");
-        // }
-        // System.out.print("\n\r");
-
     }
 
     private static void printTraceTimes() {
