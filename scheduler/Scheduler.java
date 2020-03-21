@@ -12,37 +12,44 @@ import java.util.Scanner;
 import java.util.Vector;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Collections;
+import java.util.stream.Collectors;
 
 class Scheduler {
 
-    private static Vector<Integer> arrivalTime = new Vector<Integer>();
-    private static Vector<Integer> serviceTime = new Vector<Integer>();
-    private static Vector<Character> taskID = new Vector<Character>();
+    private static Vector<Task> taskList = new Vector<Task>();
     private static Queue<Task> taskQueue = new LinkedList<Task>();
     private static Queue<Task> readyQueue = new LinkedList<Task>();
-    private static Vector<Task> completedTasks = new Vector<Task>();
 
-    private static char tid;
-    private static int at;
-    private static int st;
     private static int time = 0;
-    private static int taskStart;
-    private static boolean taskComplete = false;
     private static String emptyQ = "--";
 
-
     public static void main(String[] args) {
-        acquireTimes();
+
+
+        buildTaskList();
         buildTaskQueue();
-        callFifo();
-        printTaskSummary();
+
+        // if(fifo)
+        // else if (sjn)
+        // else if (rr)
+        // else (c'mon prof...use correct input)
+
+        fifoScheduling();
+        printTaskSummary(taskList);
         printTimeSummary();
+
+        // for (Task t : taskList) {
+        // t.printTask(t);
+        // }
     }
 
-    private static void callFifo() {
+    private static void fifoScheduling() {
 
+        boolean taskComplete;
+        
         System.out.println("\nFIFO scheduling results\n");
-        printTraceTimes();
+        printTraceHeader();
 
         while (!taskQueue.isEmpty()) {
 
@@ -58,15 +65,11 @@ class Scheduler {
                 // it is now "running"
                 currentTask = taskQueue.poll();
 
-                // Task summary variables
-                taskStart = time; // used to compute task wait time
-                tid = currentTask.getTaskID(); // current task id
-                at = currentTask.getArrivalTime(); // current task arrival time
-                st = currentTask.getServiceTime(); // current task service time
+                // Start time monitoring; used to compute Wait Time
+                currentTask.setStartTime(time); // used to compute task wait time
 
-                // While the task still has service time, run task
-                while (st != 0) {
-
+                // While the task still has remaining time, run task
+                while (currentTask.getRemainingTime() != 0) {
                     // Dynamically track if incoming tasks should be added to ready queue
                     for (Task t : taskQueue) {
                         if (!taskQueue.isEmpty()) {
@@ -75,19 +78,25 @@ class Scheduler {
                             }
                         }
                     }
+
+                    // Print scheduling results:
+                    // print format if any tasks are in ready queue
                     if (!readyQueue.isEmpty()) {
-                        System.out.printf("%4d%5c%1d%3c", time, tid, st, ' ');
+                        printTaskStats(currentTask);
                         printReadyQ(readyQueue);
                         System.out.println();
-                    } else {
-                        System.out.printf("%4d%5c%1d%5s\n", time, tid, st, emptyQ);
+                    } else { // else print generic format
+                        System.out.printf("%4d%5c%1d%5s\n", time, currentTask.getTaskID(),
+                                currentTask.getRemainingTime(), emptyQ);
                     }
-                    st--;
-                    time++;
+                    currentTask.decTimeRemaining(); // decrement remaining time for current task
+                    time++; // and time goes on...
                 }
                 currentTask.setCompletionTime(time);
+                currentTask.setResponseTime();
+                currentTask.setWaitTime();
                 taskComplete = true;
-                completedTasks.addElement(currentTask);
+
                 if (!readyQueue.isEmpty()) {
                     readyQueue.remove();
                 }
@@ -101,74 +110,77 @@ class Scheduler {
     }
 
     private static void printReadyQ(Queue<Task> q) {
+
         for (Task t : q) {
-            t.printTaskID(t);
+            t.printTaskID();
         }
     }
 
     private static void buildTaskQueue() {
 
-        // generic task variables to be replaced
-        int at = 0;
-        int st = 0;
-        char tid = '#';
+        // Build task queue from tastList passing references for easy computations and
+        // summaries
 
-        Task task;
-
-        for (int i = 0; i < taskID.size(); i++) {
-            tid = taskID.get(i);
-            at = arrivalTime.get(i);
-            st = serviceTime.get(i);
-
-            task = new Task(tid, at, st);
-            taskQueue.add(task);
-
+        for (Task t : taskList) {
+            taskQueue.add(t);
         }
     }
 
-    // private static void sortQueueAsc(Queue<Task> q) {
-    //     int a;
-    //     for (Task t : q) {
-
-    //     }
-
-    // }
-
-    private static void acquireTimes() {
+    // Construct vector of all tasks
+    private static void buildTaskList() {
         // Create scanner for I/O redirection
         Scanner input = new Scanner(System.in);
 
-        // Use a counter and modulus to retreive each value from stdin
-        // then place every other value into respective vectors.
+        // Variables to be passed to task constructor
         int counter = 0;
-        while (input.hasNext()) {
-            String a = input.next();
-            if ((counter % 2) == 0) {
-                arrivalTime.addElement(Integer.parseInt(a));
+        char tid = 'A'; // initial task is labeled 'A'
+        int at;
+        int st;
+        String[] line;
 
-            } else {
-                serviceTime.addElement(Integer.parseInt(a));
-            }
+        while (input.hasNextLine()) {
+            // parse ints from each line then build task with tid, at, and st
+            line = input.nextLine().split(" ");
+            if (!line[0].isEmpty()) {
+                at = Integer.parseInt(line[0]);
+                st = Integer.parseInt(line[1]);
+                Task task = new Task(tid, at, st);
+                taskList.addElement(task);
+            } else
+                break;
             counter++;
+            tid++;
         }
         input.close(); // close scanner to prevent leak
-
-        // Create list of taskIDs
-        for (int i = 0; i < arrivalTime.size(); i++) {
-            taskID.addElement((char) (i + 65));
-        }
     }
 
-    private static void printTraceTimes() {
+    private static void printTraceHeader() {
         System.out.print("time   cpu   ready queue (tid/rst)\n----   ---   ---------------------\n\r");
     }
 
-    private static void printTaskSummary() {
-        System.out.println("Task summary table\n");
+    private static void printTaskSummary(Vector<Task> vec) {
+        System.out.println("     arrival service completion response wait\n"
+                + "tid   time    time      time      time   time\n" + "---  ------- ------- ---------- -------- ----");
+        for (Task t : vec) {
+            System.out.printf("%3c%6d%8d%10d%10d%7d\n", t.getTaskID(), t.getArrivalTime(), t.getServiceTime(),
+                    t.getCompletionTime(), t.getResponseTime(), t.getWaitTime());
+        }
+        System.out.println();
     }
 
     private static void printTimeSummary() {
-        System.out.println(" service  wait\n  time    time\n" + " -------  ----");
+        System.out.println("service  wait\n  time   time\n" + "-------  ----");
+
+        Collections.sort(taskList);
+        for(Task t: taskList){
+            System.out.printf("%4d%7d\n", t.getServiceTime(), t.getWaitTime());
+
+        }
 
     }
+
+    private static void printTaskStats(Task t) {
+        System.out.printf("%4d%5c%1d%3c", time, t.getTaskID(), t.getRemainingTime(), ' ');
+    }
+
 }
