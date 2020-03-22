@@ -33,8 +33,8 @@ class Scheduler {
         // else if (sjn)
         // else if (rr)
         // else (c'mon prof...use correct input)
-
-        fifoScheduling();
+        // fifoScheduling();
+        sjfScheduling();
         printTaskSummary(taskList);
         printTimeSummary();
 
@@ -105,10 +105,104 @@ class Scheduler {
         System.out.println();
     }
 
+    private static void sjfScheduling() {
+
+        boolean taskComplete;
+
+        System.out.println("\nSJF(preemptive) scheduling results\n");
+        printTraceHeader();
+
+        while (!taskQueue.isEmpty()) {
+
+            // Set current task = head of task queue WITHOUT removing from task queue
+            Task currentTask = taskQueue.peek();
+
+            // Ctrl to prevent redundant print lines while no task is "running"
+            taskComplete = false;
+
+            // Start task if task arrival time = time OR if task is in the ready queue
+            if (time >= currentTask.getArrivalTime()) {
+                // Set the current task = head of task queue WITH removal from task queue since
+                // it is now "running"
+                currentTask = taskQueue.poll();
+
+                // While the task still has remaining time, run task
+                while (currentTask.getRemainingTime() != 0) {
+                    // Dynamically track if incoming tasks should be added to ready queue
+                    for (Task t : taskQueue) {
+                        if (!taskQueue.isEmpty()) {
+                            // Add any additional arriving tasks to ready queue
+                            // and remove those tasks from the task queue thus shifting ctrl
+                            // of those tasks over to the ready queue
+                            if (time == t.getArrivalTime()) {
+                                readyQueue.add(t); // add additional task to ready queue
+                            }
+                        }
+                    }
+                    for (Task t : readyQueue) {
+                        if (taskQueue.contains(t)) {
+                            taskQueue.remove(t);
+                        }
+                    }
+
+                    sortReadyQueue(); // sort the ready queue according to SJF(preemptive) protocol.
+
+                    /**
+                     * Find the task with lowest remaining time. The readyQueue's state is sorted by
+                     * shortest remaining time at the head Compare the head of the ready queue to
+                     * the current task to see which has a shorter amount of time then replace the
+                     * current task if necessary.
+                     */
+                    if (!readyQueue.isEmpty()) {
+                        if (readyQueue.peek().getRemainingTime() < currentTask.getRemainingTime()) {
+                            readyQueue.add(currentTask);
+                            currentTask = readyQueue.poll();
+                        }
+                    }
+
+                    // Print scheduling results:
+                    // print format if any tasks are in ready queue
+                    if (!readyQueue.isEmpty()) {
+                        printTaskStats(currentTask);
+                        printReadyQ(readyQueue);
+                        System.out.println();
+                    } else { // else print generic format
+                        System.out.printf("%4d%5c%1d%5s\n", time, currentTask.getTaskID(),
+                                currentTask.getRemainingTime(), emptyQ);
+                    }
+                    currentTask.decTimeRemaining(); // decrement remaining time for current task
+                    increaseWaitTimes(readyQueue);
+                    time++; // and time goes on...
+                }
+                for (Task t : taskQueue) {
+                    if (t.getRemainingTime() == 0) {
+                        taskQueue.remove(t);
+                    }
+                }
+                currentTask.setCompletionTime(time);
+                currentTask.setResponseTime();
+                taskComplete = true;
+
+                if (taskQueue.isEmpty()) {
+                    if (!readyQueue.isEmpty())
+                        taskQueue.add(readyQueue.poll());
+                } else {
+                    if (!readyQueue.isEmpty())
+                        readyQueue.remove();
+                }
+            }
+            if (!taskComplete) {
+                System.out.printf("%4d%11s\n", time, emptyQ);
+                time++;
+            }
+        }
+        System.out.println();
+    }
+
     private static void printReadyQ(Queue<Task> q) {
 
         for (Task t : q) {
-            t.printTaskID();
+            System.out.printf("%1c%1d%1s", t.getTaskID(), t.getRemainingTime(), ", ");
         }
     }
 
@@ -185,6 +279,7 @@ class Scheduler {
     }
 
     private static void sortReadyQueue() {
+        readyList.removeAllElements();
 
         while (!readyQueue.isEmpty()) {
             readyList.addElement(readyQueue.poll());
