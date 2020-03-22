@@ -1,10 +1,11 @@
-
 package scheduler;
+
+import java.util.Comparator;
 
 class Task implements Comparable<Task> {
     private char taskID;
 
-    private int arrivalTime, serviceTime, startTime, remainingTime, completionTime, responseTime, waitTime;
+    private int arrivalTime, serviceTime, remainingTime, completionTime, responseTime, waitTime;
 
     Task() {
     };
@@ -13,13 +14,11 @@ class Task implements Comparable<Task> {
         taskID = tid;
         arrivalTime = at;
         serviceTime = st;
-        startTime = -1;
         remainingTime = st;
-        completionTime = -1;
-        responseTime = -1;
-        waitTime = -1;
+        completionTime = 0;
+        responseTime = 0;
+        waitTime = 0;
     }
-
     /**
      * @return the tid
      */
@@ -39,13 +38,6 @@ class Task implements Comparable<Task> {
      */
     public int getServiceTime() {
         return serviceTime;
-    }
-
-    /**
-     * @return the startTime
-     */
-    public int getStartTime() {
-        return startTime;
     }
 
     /**
@@ -77,13 +69,6 @@ class Task implements Comparable<Task> {
     }
 
     /**
-     * @param startTime the startTime to set
-     */
-    public void setStartTime(int startTime) {
-        this.startTime = startTime;
-    }
-
-    /**
      * @param remainingTime the remainingTime to set
      */
     public void setRemainingTime(int remainingTime) {
@@ -107,19 +92,22 @@ class Task implements Comparable<Task> {
     /**
      * @param waitTime the waitTime to set
      */
-    public void setWaitTime() {
-        this.waitTime = this.startTime - this.arrivalTime;
+    public void setWaitTime(int waitTime) {
+        this.waitTime = waitTime;
     }
 
     public void decTimeRemaining() {
         this.remainingTime--;
     }
 
+    public void increaseWait() {
+        this.waitTime++;
+    }
+
     public void printTask(Task t) {
         System.out.println("Task ID = " + t.getTaskID());
         System.out.println("Task arrival time = " + t.getArrivalTime());
         System.out.println("Task service time = " + t.getServiceTime());
-        System.out.println("Start time = " + t.getStartTime());
         System.out.println("Remaining time = " + t.getRemainingTime());
         System.out.println("Completion time = " + t.getCompletionTime());
         System.out.println("Respoonse time = " + t.getResponseTime());
@@ -140,5 +128,10 @@ class Task implements Comparable<Task> {
         }
         return Integer.compare(this.getServiceTime(), rhs.getServiceTime());
     }
-
+}
+class Sortbywait implements Comparator<Task>
+{ 
+    public int compare(Task a,  Task b) {
+        return Integer.compare(a.getRemainingTime(), b.getRemainingTime());
+    }
 }

@@ -1,4 +1,3 @@
-
 /**
  * Name: Shawn Picardy
  * Course: cpsc 3220
@@ -20,12 +19,12 @@ class Scheduler {
     private static Vector<Task> taskList = new Vector<Task>();
     private static Queue<Task> taskQueue = new LinkedList<Task>();
     private static Queue<Task> readyQueue = new LinkedList<Task>();
+    private static Vector<Task> readyList = new Vector<Task>();
 
     private static int time = 0;
     private static String emptyQ = "--";
 
     public static void main(String[] args) {
-
 
         buildTaskList();
         buildTaskQueue();
@@ -47,7 +46,7 @@ class Scheduler {
     private static void fifoScheduling() {
 
         boolean taskComplete;
-        
+
         System.out.println("\nFIFO scheduling results\n");
         printTraceHeader();
 
@@ -64,9 +63,6 @@ class Scheduler {
                 // Set the current task = head of task queue WITH removal from task queue since
                 // it is now "running"
                 currentTask = taskQueue.poll();
-
-                // Start time monitoring; used to compute Wait Time
-                currentTask.setStartTime(time); // used to compute task wait time
 
                 // While the task still has remaining time, run task
                 while (currentTask.getRemainingTime() != 0) {
@@ -90,11 +86,11 @@ class Scheduler {
                                 currentTask.getRemainingTime(), emptyQ);
                     }
                     currentTask.decTimeRemaining(); // decrement remaining time for current task
+                    increaseWaitTimes(readyQueue);
                     time++; // and time goes on...
                 }
                 currentTask.setCompletionTime(time);
                 currentTask.setResponseTime();
-                currentTask.setWaitTime();
                 taskComplete = true;
 
                 if (!readyQueue.isEmpty()) {
@@ -172,15 +168,30 @@ class Scheduler {
         System.out.println("service  wait\n  time   time\n" + "-------  ----");
 
         Collections.sort(taskList);
-        for(Task t: taskList){
+        for (Task t : taskList) {
             System.out.printf("%4d%7d\n", t.getServiceTime(), t.getWaitTime());
-
         }
-
+        System.out.println();
     }
 
     private static void printTaskStats(Task t) {
         System.out.printf("%4d%5c%1d%3c", time, t.getTaskID(), t.getRemainingTime(), ' ');
     }
 
+    private static void increaseWaitTimes(Queue<Task> q) {
+        for (Task t : q) {
+            t.increaseWait();
+        }
+    }
+
+    private static void sortReadyQueue() {
+
+        while (!readyQueue.isEmpty()) {
+            readyList.addElement(readyQueue.poll());
+        }
+
+        Collections.sort(readyList, new Sortbywait());
+        readyQueue.addAll(readyList);
+
+    }
 }
