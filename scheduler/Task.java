@@ -1,3 +1,10 @@
+/**
+ * Name: Shawn Picardy
+ * Course: cpsc 3220
+ * Smotherman
+ * March 23th. 
+ */
+
 package scheduler;
 
 import java.util.Comparator;
@@ -19,6 +26,7 @@ class Task implements Comparable<Task> {
         responseTime = 0;
         waitTime = 0;
     }
+
     /**
      * @return the tid
      */
@@ -104,18 +112,6 @@ class Task implements Comparable<Task> {
         this.waitTime++;
     }
 
-    public void printTask(Task t) {
-        System.out.println("Task ID = " + t.getTaskID());
-        System.out.println("Task arrival time = " + t.getArrivalTime());
-        System.out.println("Task service time = " + t.getServiceTime());
-        System.out.println("Remaining time = " + t.getRemainingTime());
-        System.out.println("Completion time = " + t.getCompletionTime());
-        System.out.println("Respoonse time = " + t.getResponseTime());
-        System.out.println("Wait time = " + t.getWaitTime());
-
-        System.out.println();
-    }
-
     public void printTaskID() {
         char tid = this.getTaskID();
         int st = this.getServiceTime();
@@ -129,9 +125,11 @@ class Task implements Comparable<Task> {
         return Integer.compare(this.getServiceTime(), rhs.getServiceTime());
     }
 }
-class Sortbywait implements Comparator<Task>
-{ 
-    public int compare(Task a,  Task b) {
+
+// Helper class used to define sorting algorithm for use in
+// Scheduling.sortReadyQueue()
+class SortByShortest implements Comparator<Task> {
+    public int compare(Task a, Task b) {
         return Integer.compare(a.getRemainingTime(), b.getRemainingTime());
     }
 }

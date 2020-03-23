@@ -15,7 +15,7 @@
             "name": "Debug (Launch)-scheduler/Scheduler",
             "request": "launch",
             "mainClass": "scheduler.Scheduler",
-            "args": "< in1.txt"
+            "args": "-rr < in1.txt"
         }
     ]
 }
